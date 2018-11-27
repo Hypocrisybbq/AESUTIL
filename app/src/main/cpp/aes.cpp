@@ -51,6 +51,23 @@ static const uint8_t rsbox[256] = {
         0x17, 0x2b, 0x04, 0x7e, 0xba, 0x77, 0xd6, 0x26, 0xe1, 0x69, 0x14, 0x63, 0x55, 0x21, 0x0c, 0x7d //F
 };
 
+static const uint8_t key_box[40] = {
+        //0     1    2      3     4    5     6     7      8    9
+        0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80, 0x1b, 0x36,//0
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,//0
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,//0
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,//0
+};
+#define TEST
+#ifdef TEST
+static uint8_t temp[4][4] = {           //初始的密钥,测试数据
+        {0x2b, 0x28, 0xab, 0x09},
+        {0x7e, 0xae, 0xf7, 0xcf},
+        {0x15, 0xd2, 0x15, 0x4f},
+        {0x16, 0xa6, 0x88, 0x3c},
+};
+#endif
+
 //生成多轮密钥
 uint8_t *getKey(jstring key, JNIEnv *env, int rounds, uint8_t *result) {
     const char *key_string = env->GetStringUTFChars(key, JNI_FALSE);
@@ -63,34 +80,31 @@ uint8_t *getKey(jstring key, JNIEnv *env, int rounds, uint8_t *result) {
 //        int column = i % 4;
 //        temp[low][column] = local_key[i];
 //    }
-    uint8_t temp[4][4] = {
-            {0x2b, 0x28, 0xab, 0x09},
-            {0x7e, 0xae, 0xf7, 0xcf},
-            {0x15, 0xd2, 0x15, 0x4f},
-            {0x16, 0xa6, 0x88, 0x3c},
-    };
-    for (int i = 0; i < 16; ++i) {
-        result[i] = temp[i / 4][i % 4];
+    for (int i = 0; i < 4; ++i) {             //把初始数据传入result中
+        for (int j = 0; j < 4; ++j) {
+            *(result + 4 * i + j) = temp[i][j];
+        }
+    }
+    for (int i = 0; i < rounds; ++i) {//按照轮次扩展
+        *(result + 16 * (i + 1)) = sbox[temp[1][3]] ^ temp[0][0] ^ key_box[i];
+        *(result + 16 * (i + 1) + 1) = sbox[temp[2][3]] ^ temp[1][0] ^ key_box[i + 10];
+        *(result + 16 * (i + 1) + 2) = sbox[temp[3][3]] ^ temp[2][0] ^ key_box[i + 20];
+        *(result + 16 * (i + 1) + 3) = sbox[temp[0][3]] ^ temp[3][0] ^ key_box[i + 30];
+        *(result + 16 * (i + 1) + 4) = ;
     }
     uint8_t temp_column[4];
-    temp_column[0] = temp[1][3];
-    temp_column[1] = temp[2][3];
-    temp_column[2] = temp[3][3];
-    temp_column[3] = temp[0][3];
-    for (int k = 0; k < 10; ++k) {
-        for (int i = 0; i < 4; ++i) {
-            temp_column[4 * k + i] = sbox[temp_column[4 * k + i]];
-        }
-        for (int i = 0; i < 4; ++i) {
-            temp_column[i] = (temp[i][0]) ^ (temp_column[i]);
-            uint8_t a;
-            if (i == 0) {
-                a = 0x01;
-            } else {
-                a = 0x00;
+    for (int j = 0; j < rounds; ++j) {//按照轮次进行扩展
+        temp_column[0] = temp[1][3];
+        temp_column[1] = temp[2][3];
+        temp_column[2] = temp[3][3];
+        temp_column[3] = temp[0][3];
+        for (int k = 0; k < 4; ++k) {
+            for (int i = 0; i < 4; ++i) {
+                temp_column[i] = sbox[temp_column[i]];//s盒替换
+                temp_column[i] = (temp[i][0]) ^ (temp_column[i]);//和第一列的对应位置异或
+                temp_column[i] = (key_box[]) ^ (temp_column[i]);
+                temp[i][0] = temp_column[i];
             }
-            temp_column[i] = (a) ^ (temp_column[i]);
-            LOGE("c:%x", temp_column[i]);
         }
     }
     return result;
