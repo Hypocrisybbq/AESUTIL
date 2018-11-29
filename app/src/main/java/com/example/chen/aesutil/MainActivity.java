@@ -11,6 +11,6 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         Util util = new Util();
-        util.encrypt("abcd", "abcd1234efgh5678");
+        util.encrypt("abcdabcdabcdabcd", "abcd1234efgh5678");
     }
 }
