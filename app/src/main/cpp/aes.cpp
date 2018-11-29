@@ -68,8 +68,12 @@ static uint8_t temp[4][4] = {           //初始的密钥,测试数据
 };
 #endif
 
+void print(char a, char b, char c) {
+    LOGE("%x:%x:%x", a, b, c);
+}
+
 //生成多轮密钥
-uint8_t *getKey(jstring key, JNIEnv *env, int rounds, uint8_t *result) {
+void getKey(jstring key, JNIEnv *env, int rounds, uint8_t result[key_rounds][key_num]) {//密钥扩展.视频中有一个地方的计算是错误的
     const char *key_string = env->GetStringUTFChars(key, JNI_FALSE);
     size_t key_length = strlen(key_string);
     uint8_t local_key[key_length];
@@ -80,32 +84,26 @@ uint8_t *getKey(jstring key, JNIEnv *env, int rounds, uint8_t *result) {
 //        int column = i % 4;
 //        temp[low][column] = local_key[i];
 //    }
-    for (int i = 0; i < 4; ++i) {             //把初始数据传入result中
+    for (int i = 0; i < rounds; ++i) {
         for (int j = 0; j < 4; ++j) {
-            *(result + 4 * i + j) = temp[i][j];
-        }
-    }
-    for (int i = 0; i < rounds; ++i) {//按照轮次扩展
-        *(result + 16 * (i + 1)) = sbox[temp[1][3]] ^ temp[0][0] ^ key_box[i];
-        *(result + 16 * (i + 1) + 1) = sbox[temp[2][3]] ^ temp[1][0] ^ key_box[i + 10];
-        *(result + 16 * (i + 1) + 2) = sbox[temp[3][3]] ^ temp[2][0] ^ key_box[i + 20];
-        *(result + 16 * (i + 1) + 3) = sbox[temp[0][3]] ^ temp[3][0] ^ key_box[i + 30];
-        *(result + 16 * (i + 1) + 4) = ;
-    }
-    uint8_t temp_column[4];
-    for (int j = 0; j < rounds; ++j) {//按照轮次进行扩展
-        temp_column[0] = temp[1][3];
-        temp_column[1] = temp[2][3];
-        temp_column[2] = temp[3][3];
-        temp_column[3] = temp[0][3];
-        for (int k = 0; k < 4; ++k) {
-            for (int i = 0; i < 4; ++i) {
-                temp_column[i] = sbox[temp_column[i]];//s盒替换
-                temp_column[i] = (temp[i][0]) ^ (temp_column[i]);//和第一列的对应位置异或
-                temp_column[i] = (key_box[]) ^ (temp_column[i]);
-                temp[i][0] = temp_column[i];
+            if (j == 0) {
+                for (int k = 0; k < 4; ++k) {
+                    if (k < 3) {
+                        result[i][j + 4 * k] = sbox[temp[k + 1][3]] ^ temp[k][0] ^ key_box[k * 10 + i];
+                    } else {
+                        result[i][j + 4 * k] = sbox[temp[0][3]] ^ temp[k][0] ^ key_box[k * 10 + 1];
+                    }
+                }
+            } else {
+                for (int k = 0; k < 4; k++) {
+                    result[i][j + 4 * k] = result[i][j + 4 * k - 1] ^ temp[k][j];
+                }
             }
         }
+        for (int k = 0; k < 16; ++k) {             //把初始数据传入result中
+            temp[k / 4][k % 4] = result[i][k];
+//            LOGE("%x", temp[k / 4][k % 4]);
+        }
+//        LOGE("%s", "-----------------------------------------------------------------------");
     }
-    return result;
 };
