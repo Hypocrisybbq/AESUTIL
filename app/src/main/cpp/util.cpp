@@ -29,11 +29,17 @@ JNIEXPORT jstring JNICALL Java_com_example_chen_aesutil_Util_encrypt
     uint8_t info_fill[part_num][16];
     for (int i = 0; i < (part_num * 16); ++i) {
         if (i < info_size) {
-            info_fill[i / 16][i % 6] = local_info[i];
+            info_fill[i / 16][i % 16] = local_info[i];
         } else {
-            info_fill[i / 16][i % 6] = fill_char;
+            info_fill[i / 16][i % 16] = fill_char;
         }
     }
+
     encrypt_ecb(info_fill, part_num, key_result);
+    for (int i = 0; i < 16; ++i) {
+        LOGE("%x", info_fill[0][i]);
+    }
+//    env->NewStringUTF(reinterpret_cast<const char *>(info_fill));
+//    return pJstring;
     return env->NewStringUTF("abcd");
 };

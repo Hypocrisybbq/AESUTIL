@@ -58,9 +58,9 @@ static const uint8_t key_box[40] = {
         0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,//0
         0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,//0
 };
-#define TEST
+//#define TEST
 #ifdef TEST
-static uint8_t temp[4][4] = {           //初始的密钥,测试数据
+static uint8_t temp_t[4][4] = {           //初始的密钥,测试数据
         {0x2b, 0x28, 0xab, 0x09},
         {0x7e, 0xae, 0xf7, 0xcf},
         {0x15, 0xd2, 0x15, 0x4f},
@@ -72,11 +72,25 @@ static uint8_t info_temp_f[4][4] = {
         {0xf6, 0x30, 0x98, 0x07},
         {0xa8, 0x8d, 0xa2, 0x34},
 };
-static uint8_t info_temp[4][4] = {
+static uint8_t info_temp_t[4][4] = {
         {0x19, 0xa0, 0x9a, 0xe9},
         {0x3d, 0xf4, 0xc6, 0xf8},
         {0xe3, 0xe2, 0x8d, 0x48},
         {0xbe, 0x2b, 0x2a, 0x08},
+};
+
+
+static uint8_t info_temp[4][4] = {
+        {0x61, 0x62, 0x63, 0x64},
+        {0x61, 0x62, 0x63, 0x64},
+        {0x61, 0x62, 0x63, 0x64},
+        {0x61, 0x62, 0x63, 0x64},
+};
+static uint8_t temp[4][4] = {           //初始的密钥,测试数据
+        {0x61, 0x62, 0x63, 0x64},
+        {0x31, 0x32, 0x33, 0x34},
+        {0x65, 0x66, 0x67, 0x68},
+        {0x35, 0x36, 0x37, 0x38},
 };
 #endif
 
@@ -98,12 +112,12 @@ void getKey(jstring key, JNIEnv *env, uint8_t result[key_rounds][key_num]) {//�
     size_t key_length = strlen(key_string);
     uint8_t local_key[key_length];
     memcpy(local_key, key_string, key_length);
-//    uint8_t temp[4][4];
-//    for (int i = 0; i < key_length; ++i) {
-//        int low = i / 4;
-//        int column = i % 4;
-//        temp[low][column] = local_key[i];
-//    }
+    uint8_t temp[4][4];
+    for (int i = 0; i < key_length; ++i) {
+        int low = i / 4;
+        int column = i % 4;
+        temp[low][column] = local_key[i];
+    }
     for (int i = 0; i < key_rounds; ++i) {
         for (int j = 0; j < 4; ++j) {
             if (j == 0) {
@@ -128,56 +142,65 @@ void getKey(jstring key, JNIEnv *env, uint8_t result[key_rounds][key_num]) {//�
     }
 };
 
+//ecb加密
 void encrypt_ecb(uint8_t info[][16], size_t part_num, uint8_t key[key_rounds][key_num]) {
-//    uint8_t infoTemp[4][4];
-//    for (int i = 0; i < 16; ++i) {//把取出第一段明文
-//        temp[i / 4][i % 4] = info[0][i];
-//    }
-    for (int k = 0; k < key_rounds; ++k) {
-        for (int i = 0; i < 16; ++i) {
-            info_temp[i / 4][i % 4] = sbox[info_temp[i / 4][i % 4]];
-//            LOGE("%x", info_temp[i / 4][i % 4]);
+    for (int m = 0; m < part_num; ++m) {
+        uint8_t info_temp[4][4];
+        for (int n = 0; n < 16; ++n) {
+            info_temp[n / 4][n % 4] = info[m][n];
+//            LOGE("%x", info_temp[n / 4][n % 4]);
         }
 //        LOGE("%s", "----------------------------------------------------------");
-        uint8_t swap_temp = info_temp[1][0];//第二行行位移
-        info_temp[1][0] = info_temp[1][1];
-        info_temp[1][1] = info_temp[1][2];
-        info_temp[1][2] = info_temp[1][3];
-        info_temp[1][3] = swap_temp;
-
-        swap_temp = info_temp[2][0]; //第三行行位移
-        info_temp[2][0] = info_temp[2][2];
-        info_temp[2][2] = swap_temp;
-
-        swap_temp = info_temp[2][1];
-        info_temp[2][1] = info_temp[2][3];
-        info_temp[2][3] = swap_temp;
-
-        swap_temp = info_temp[3][3];
-        info_temp[3][3] = info_temp[3][2];
-        info_temp[3][2] = info_temp[3][1];
-        info_temp[3][1] = info_temp[3][0];
-        info_temp[3][0] = swap_temp;
-
-
-        if (k < (key_rounds - 1)) {
-            //列混淆
-            for (int j = 0; j < 4; ++j) {
-                uint8_t a = info_temp[0][j];
-                uint8_t b = info_temp[1][j];
-                uint8_t c = info_temp[2][j];
-                uint8_t d = info_temp[3][j];
-                info_temp[0][j] = mixCal2(a) ^ mixCal3(b) ^ c ^ d;
-                info_temp[1][j] = a ^ mixCal2(b) ^ mixCal3(c) ^ d;
-                info_temp[2][j] = a ^ b ^ mixCal2(c) ^ mixCal3(d);
-                info_temp[3][j] = mixCal3(a) ^ b ^ c ^ mixCal2(d);
+        for (int k = 0; k < key_rounds; ++k) {
+            for (int i = 0; i < 16; ++i) {
+                info_temp[i / 4][i % 4] = sbox[info_temp[i / 4][i % 4]];
+//            LOGE("%x", info_temp[i / 4][i % 4]);
             }
+//        LOGE("%s", "----------------------------------------------------------");
+            uint8_t swap_temp = info_temp[1][0];//第二行行位移
+            info_temp[1][0] = info_temp[1][1];
+            info_temp[1][1] = info_temp[1][2];
+            info_temp[1][2] = info_temp[1][3];
+            info_temp[1][3] = swap_temp;
+
+            swap_temp = info_temp[2][0]; //第三行行位移
+            info_temp[2][0] = info_temp[2][2];
+            info_temp[2][2] = swap_temp;
+
+            swap_temp = info_temp[2][1];
+            info_temp[2][1] = info_temp[2][3];
+            info_temp[2][3] = swap_temp;
+
+            swap_temp = info_temp[3][3];
+            info_temp[3][3] = info_temp[3][2];
+            info_temp[3][2] = info_temp[3][1];
+            info_temp[3][1] = info_temp[3][0];
+            info_temp[3][0] = swap_temp;
+
+
+            if (k < (key_rounds - 1)) {
+                //列混淆
+                for (int j = 0; j < 4; ++j) {
+                    uint8_t a = info_temp[0][j];
+                    uint8_t b = info_temp[1][j];
+                    uint8_t c = info_temp[2][j];
+                    uint8_t d = info_temp[3][j];
+                    info_temp[0][j] = mixCal2(a) ^ mixCal3(b) ^ c ^ d;
+                    info_temp[1][j] = a ^ mixCal2(b) ^ mixCal3(c) ^ d;
+                    info_temp[2][j] = a ^ b ^ mixCal2(c) ^ mixCal3(d);
+                    info_temp[3][j] = mixCal3(a) ^ b ^ c ^ mixCal2(d);
+                }
+            }
+            for (int j = 0; j < 16; ++j) {
+                info_temp[j / 4][j % 4] = key[k][j] ^ info_temp[j / 4][j % 4];
+//                LOGE("%x", info_temp[j / 4][j % 4]);
+            }
+            for (int n = 0; n < 16; ++n) {
+                info[m][n] = info_temp[n / 4][n % 4];
+//                LOGE("%x", info[m][n]);
+            }
+//            LOGE("%s", "-------------------------------------");
         }
 
-        LOGE("%s", "-------------------------------------");
-        for (int j = 0; j < 16; ++j) {
-            info_temp[j / 4][j % 4] = key[k][j] ^ info_temp[j / 4][j % 4];
-            LOGE("%x", info_temp[j / 4][j % 4]);
-        }
     }
 };
