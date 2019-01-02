@@ -68,11 +68,11 @@ void PCKS5Padding128Encrypt(const char *info, const char *key) {
             result[i] = PAD[16 - info_length % 16];
         }
     }
-    for (int i = 0; i < info_length_max; ++i) {
-        LOGE("%d", result[i]);
-    }
 };
 
+void getKey(const char *key, uint8_t *key_result) {
+
+}
 
 //生成多轮密钥
 void getKey(jstring key, JNIEnv *env, uint8_t result[key_rounds][key_num]) {//密钥扩展.视频中有一个地方的计算是错误的
