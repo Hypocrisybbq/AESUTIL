@@ -5,5 +5,5 @@ public class Util {
         System.loadLibrary("util");
     }
 
-    public native String encrypt(String info, String key);
+    public native String encrypty(String info, String key);
 }
