@@ -60,116 +60,37 @@ void print(char a, char b, char c) {
 void PCKS5Padding128Encrypt(const char *info, const char *key) {
     size_t info_length = strlen(info);
     size_t info_length_max = ((info_length / 16) + 1) * 16;
-    uint8_t *result = (uint8_t *) malloc(info_length_max);
+    uint8_t *info_result = (uint8_t *) malloc(info_length_max);
     for (int i = 0; i < info_length_max; ++i) {
         if (i < info_length) {
-            result[i] = (uint8_t) info[i];
+            info_result[i] = (uint8_t) info[i];
         } else {
-            result[i] = PAD[16 - info_length % 16];
+            info_result[i] = PAD[16 - info_length % 16];
         }
     }
+    uint8_t key_result[176];
+    getKey(key, key_result);
 };
 
-void getKey(const char *key, uint8_t *key_result) {
-
-}
-
-//生成多轮密钥
-void getKey(jstring key, JNIEnv *env, uint8_t result[key_rounds][key_num]) {//密钥扩展.视频中有一个地方的计算是错误的
-    const char *key_string = env->GetStringUTFChars(key, JNI_FALSE);
-    LOGE("%s", key_string);
-    size_t key_length = strlen(key_string);
-    uint8_t local_key[key_length];
-    memcpy(local_key, key_string, key_length);
-    uint8_t temp[4][4];
-    for (int i = 0; i < key_length; ++i) {
-        int low = i / 4;
-        int column = i % 4;
-        temp[low][column] = local_key[i];
+/**
+ * 为了方便计算,密钥原16位也放入返回结果,位置为0-16
+ */
+void getKey(const char *key, uint8_t *result) {
+    for (int i = 0; i < 16; ++i) {//前16位放置原来的密钥
+        result[i] = (uint8_t) key[i];
     }
-    for (int i = 0; i < key_rounds; ++i) {
+    for (int i = 1; i < 11; ++i) {//17-176位放密钥的扩展
         for (int j = 0; j < 4; ++j) {
             if (j == 0) {
-                for (int k = 0; k < 4; ++k) {
-                    if (k < 3) {
-                        result[i][j + 4 * k] = sbox[temp[k + 1][3]] ^ temp[k][0] ^ key_box[k * 10 + i];
-                    } else {
-                        result[i][j + 4 * k] = sbox[temp[0][3]] ^ temp[k][0] ^ key_box[k * 10 + 1];
-                    }
-                }
+                result[i * 16] = sbox[result[(i - 1) * 16 + 13]] ^ result[(i - 1) * 16] ^ key_box[i - 1];
+                result[i * 16 + 1] = sbox[result[(i - 1) * 16 + 14]] ^ result[(i - 1) * 16 + 1];
+                result[i * 16 + 2] = sbox[result[(i - 1) * 16 + 15]] ^ result[(i - 1) * 16 + 2];
+                result[i * 16 + 3] = sbox[result[(i - 1) * 16 + 12]] ^ result[(i - 1) * 16 + 3];
             } else {
-                for (int k = 0; k < 4; k++) {
-                    result[i][j + 4 * k] = result[i][j + 4 * k - 1] ^ temp[k][j];
+                for (int k = 0; k < 4; ++k) {
+                    result[i * 16 + j * 4 + k] = result[(i - 1) * 16 + j * 4 + k] ^ result[i * 16 + (j - 1) * 4 + k];
                 }
             }
         }
-        for (int k = 0; k < 16; ++k) {             //把初始数据传入result中
-            temp[k / 4][k % 4] = result[i][k];
-//            LOGE("%x", temp[k / 4][k % 4]);
-        }
-//        LOGE("%s", "-----------------------------------------------------------------------");
     }
 };
-//
-////ecb加密
-//void encrypt_ecb(uint8_t info[][16], size_t part_num, uint8_t key[key_rounds][key_num]) {
-//    for (int m = 0; m < part_num; ++m) {
-//        uint8_t info_temp[4][4];
-//        for (int n = 0; n < 16; ++n) {
-//            info_temp[n / 4][n % 4] = info[m][n];
-////            LOGE("%x", info_temp[n / 4][n % 4]);
-//        }
-////        LOGE("%s", "----------------------------------------------------------");
-//        for (int k = 0; k < key_rounds; ++k) {
-//            for (int i = 0; i < 16; ++i) {
-//                info_temp[i / 4][i % 4] = sbox[info_temp[i / 4][i % 4]];
-////            LOGE("%x", info_temp[i / 4][i % 4]);
-//            }
-////        LOGE("%s", "----------------------------------------------------------");
-//            uint8_t swap_temp = info_temp[1][0];//第二行行位移
-//            info_temp[1][0] = info_temp[1][1];
-//            info_temp[1][1] = info_temp[1][2];
-//            info_temp[1][2] = info_temp[1][3];
-//            info_temp[1][3] = swap_temp;
-//
-//            swap_temp = info_temp[2][0]; //第三行行位移
-//            info_temp[2][0] = info_temp[2][2];
-//            info_temp[2][2] = swap_temp;
-//
-//            swap_temp = info_temp[2][1];
-//            info_temp[2][1] = info_temp[2][3];
-//            info_temp[2][3] = swap_temp;
-//
-//            swap_temp = info_temp[3][3];
-//            info_temp[3][3] = info_temp[3][2];
-//            info_temp[3][2] = info_temp[3][1];
-//            info_temp[3][1] = info_temp[3][0];
-//            info_temp[3][0] = swap_temp;
-//
-//
-//            if (k < (key_rounds - 1)) {
-//                //列混淆
-//                for (int j = 0; j < 4; ++j) {
-//                    uint8_t a = info_temp[0][j];
-//                    uint8_t b = info_temp[1][j];
-//                    uint8_t c = info_temp[2][j];
-//                    uint8_t d = info_temp[3][j];
-//                    info_temp[0][j] = mixCal2(a) ^ mixCal3(b) ^ c ^ d;
-//                    info_temp[1][j] = a ^ mixCal2(b) ^ mixCal3(c) ^ d;
-//                    info_temp[2][j] = a ^ b ^ mixCal2(c) ^ mixCal3(d);
-//                    info_temp[3][j] = mixCal3(a) ^ b ^ c ^ mixCal2(d);
-//                }
-//            }
-//            for (int j = 0; j < 16; ++j) {
-//                info_temp[j / 4][j % 4] = key[k][j] ^ info_temp[j / 4][j % 4];
-////                LOGE("%x", info_temp[j / 4][j % 4]);
-//            }
-//            for (int n = 0; n < 16; ++n) {
-//                info[m][n] = info_temp[n / 4][n % 4];
-////                LOGE("%x", info[m][n]);
-//            }
-////            LOGE("%s", "-------------------------------------");
-//        }
-//
-//    }
-//};

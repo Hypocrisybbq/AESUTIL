@@ -20,6 +20,5 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
         Util util = new Util();
         String encrypt = util.encrypty(info, pass);
-        Log.e("CHEN", "encrypt:"+encrypt );
     }
 }
