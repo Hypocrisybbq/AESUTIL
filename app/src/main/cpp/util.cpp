@@ -18,6 +18,6 @@ JNIEXPORT jstring JNICALL Java_com_example_chen_aesutil_Util_encrypty
         (JNIEnv *env, jobject, jstring info, jstring key) {
     const char *info_str = env->GetStringUTFChars(info, JNI_FALSE);
     const char *key_str = env->GetStringUTFChars(key, JNI_FALSE);
-     PCKS5Padding128Encrypt(info_str, key_str);
+    PCKS5Padding128Encrypt(info_str, key_str);
     return env->NewStringUTF("adv");
 };
