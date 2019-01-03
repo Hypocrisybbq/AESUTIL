@@ -58,8 +58,9 @@ void print(char a, char b, char c) {
 }
 
 void PCKS5Padding128Encrypt(const char *info, const char *key) {
-    size_t info_length = strlen(info);
-    size_t info_length_max = ((info_length / 16) + 1) * 16;
+    size_t info_length = strlen(info);//明文的长度
+    size_t info_pcks5_num = info_length / 16 + 1;//明文用PCKS5Padding填充后的段是
+    size_t info_length_max = (info_pcks5_num) * 16;//明文填充后的长度
     uint8_t *info_result = (uint8_t *) malloc(info_length_max);
     for (int i = 0; i < info_length_max; ++i) {
         if (i < info_length) {
@@ -70,7 +71,37 @@ void PCKS5Padding128Encrypt(const char *info, const char *key) {
     }
     uint8_t key_result[176];
     getKey(key, key_result);
+    for (int i = 0; i < info_pcks5_num; ++i) {//明文进行分段加密
+        aesEncrypt(info_result + i * 16, key_result + 16);
+    }
 };
+
+void aesEncrypt(uint8_t *info_start, uint8_t *key) {
+    subBytes(info_start);
+    shiftRows(info_start);
+    mixColumns(info_start);
+    addRoundKey(info_start, key);
+};
+
+void subBytes(uint8_t *info_start) {
+    for (int i = 0; i < 16; ++i) {
+        info_start[i] = sbox[info_start[i]];
+        LOGE("%x", info_start[i]);
+    }
+};
+
+void shiftRows(uint8_t *info_start) {
+
+};//行位移
+
+void mixColumns(uint8_t *info_start) {
+
+};//列混淆
+
+void addRoundKey(uint8_t *info_start, uint8_t *key) {
+
+};//与键值异或
+
 
 /**
  * 为了方便计算,密钥原16位也放入返回结果,位置为0-16

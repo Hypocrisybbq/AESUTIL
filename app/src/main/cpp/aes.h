@@ -72,12 +72,16 @@ static const uint8_t PAD[] = {0x10, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x
 
 void PCKS5Padding128Encrypt(const char *info, const char *key);
 
-/**
- *第一参数是需要密钥扩展的密钥,
- * 第二个是env.
- * 第三个参数是生成密钥的轮次,
- * 第四个是用来获取经过扩展后的密钥的数组指针
- */
 void getKey(const char *key, uint8_t *result);
+
+void aesEncrypt(uint8_t *info_start, uint8_t *key);
+
+void subBytes(uint8_t *info_start);//S表替换
+
+void shiftRows(uint8_t *info_start);//行位移
+
+void mixColumns(uint8_t *info_start);//列混淆
+
+void addRoundKey(uint8_t *info_start, uint8_t *key);//与键值异或
 
 #endif //AESUTIL_AES_H

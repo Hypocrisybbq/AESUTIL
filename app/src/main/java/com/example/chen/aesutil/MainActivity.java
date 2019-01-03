@@ -11,7 +11,8 @@ import java.io.UnsupportedEncodingException;
 
 public class MainActivity extends AppCompatActivity {
 
-    private String info = "123abcABC*%!~#+_/中文测试";
+//    private String info = "123abcABC*%!~#+_/中文测试";
+    private String info = "123456789abcdefghijklmnopqrstuvwxyz";
     private String pass = "1234567890abcdef";
 
     @Override
