@@ -94,25 +94,25 @@ void subBytes(uint8_t *info_start) {
 };
 
 void shiftRows(uint8_t *info_start) {
-    uint8_t temp = info_start[4];
-    info_start[4] = info_start[5];
-    info_start[5] = info_start[6];
-    info_start[6] = info_start[7];
-    info_start[7] = temp;
+    uint8_t temp = info_start[1];
+    info_start[1] = info_start[5];
+    info_start[5] = info_start[9];
+    info_start[9] = info_start[13];
+    info_start[13] = temp;
 
-    temp = info_start[8];
-    info_start[8] = info_start[10];
+    temp = info_start[2];
+    info_start[2] = info_start[10];
     info_start[10] = temp;
 
-    temp = info_start[9];
-    info_start[9] = info_start[11];
-    info_start[11] = temp;
+    temp = info_start[6];
+    info_start[6] = info_start[14];
+    info_start[14] = temp;
 
     temp = info_start[15];
-    info_start[15] = info_start[14];
-    info_start[14] = info_start[13];
-    info_start[13] = info_start[12];
-    info_start[12] = temp;
+    info_start[15] = info_start[11];
+    info_start[11] = info_start[7];
+    info_start[7] = info_start[3];
+    info_start[3] = temp;
 
 };//行位移
 
