@@ -59,8 +59,11 @@ void print(char a, char b, char c) {
 
 void PCKS5Padding128Encrypt(const char *info, const char *key) {
     size_t info_length = strlen(info);//明文的长度
+//    LOGE("info_length:%zu", info_length);
     size_t info_pcks5_num = info_length / 16 + 1;//明文用PCKS5Padding填充后的段是
+//    LOGE("info_pcks5_num:%zu", info_pcks5_num);
     size_t info_length_max = (info_pcks5_num) * 16;//明文填充后的长度
+//    LOGE("info_length_max:%zu", info_length_max);
     uint8_t *info_result = (uint8_t *) malloc(info_length_max);
     for (int i = 0; i < info_length_max; ++i) {
         if (i < info_length) {
@@ -91,6 +94,25 @@ void subBytes(uint8_t *info_start) {
 };
 
 void shiftRows(uint8_t *info_start) {
+    uint8_t temp = info_start[4];
+    info_start[4] = info_start[5];
+    info_start[5] = info_start[6];
+    info_start[6] = info_start[7];
+    info_start[7] = temp;
+
+    temp = info_start[8];
+    info_start[8] = info_start[10];
+    info_start[10] = temp;
+
+    temp = info_start[9];
+    info_start[9] = info_start[11];
+    info_start[11] = temp;
+
+    temp = info_start[15];
+    info_start[15] = info_start[14];
+    info_start[14] = info_start[13];
+    info_start[13] = info_start[12];
+    info_start[12] = temp;
 
 };//行位移
 
@@ -124,4 +146,7 @@ void getKey(const char *key, uint8_t *result) {
             }
         }
     }
+//    for (int i = 0; i < 176; ++i) {
+//        LOGE("%x",result[i]);
+//    }
 };
