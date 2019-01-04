@@ -80,16 +80,20 @@ void PCKS5Padding128Encrypt(const char *info, const char *key) {
 };
 
 void aesEncrypt(uint8_t *info_start, uint8_t *key) {
-    subBytes(info_start);
-    shiftRows(info_start);
-    mixColumns(info_start);
-    addRoundKey(info_start, key);
+    for (int i = 0; i < 10; ++i) {
+        subBytes(info_start);
+        shiftRows(info_start);
+        if (i < 9) {
+            mixColumns(info_start);
+        }
+        addRoundKey(info_start, key + 16 * i);
+    }
+
 };
 
 void subBytes(uint8_t *info_start) {
     for (int i = 0; i < 16; ++i) {
         info_start[i] = sbox[info_start[i]];
-        LOGE("%x", info_start[i]);
     }
 };
 
@@ -117,11 +121,26 @@ void shiftRows(uint8_t *info_start) {
 };//行位移
 
 void mixColumns(uint8_t *info_start) {
-
+    uint8_t temp[16];
+    for (int i = 0; i < 16; ++i) {
+        temp[i] = info_start[i];
+    }
+    for (int i = 0; i < 4; ++i) {
+        for (int j = 0; j < 4; ++j) {
+            int position = 4 * i + j;
+            info_start[position]
+                    = mixCal2(temp[position])
+                      ^ mixCal3(temp[4 * i + (j + 1) % 4])
+                      ^ temp[4 * i + (j + 2) % 4]
+                      ^ temp[4 * i + (j + 3) % 4];
+        }
+    }
 };//列混淆
 
 void addRoundKey(uint8_t *info_start, uint8_t *key) {
-
+    for (int i = 0; i < 16; ++i) {
+        info_start[i] = info_start[i] ^ key[i];
+    }
 };//与键值异或
 
 
