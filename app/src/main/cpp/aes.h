@@ -82,6 +82,6 @@ void shiftRows(uint8_t *info_start);//行位移
 
 void mixColumns(uint8_t *info_start);//列混淆
 
-void addRoundKey(uint8_t *info_start, uint8_t *key);//与键值异或
+void addRoundKey(uint8_t *info_start, uint8_t *key,int round);//与键值异或
 
 #endif //AESUTIL_AES_H

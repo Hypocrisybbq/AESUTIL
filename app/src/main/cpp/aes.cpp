@@ -8,7 +8,6 @@
 #include <malloc.h>
 #include "aes.h"
 
-
 uint8_t mixCal2(uint8_t value) {//有限域的计算,所以高于8位的位会溢出,溢出的数据不需要,如果类型是int 请添加0xff,不然结果会出异常
     return static_cast<uint8_t>((value << 1) ^ ((value & 0x80) ? 0x1b : 0x00));
 }
@@ -16,6 +15,18 @@ uint8_t mixCal2(uint8_t value) {//有限域的计算,所以高于8位的位会�
 uint8_t mixCal3(uint8_t value) {
     return mixCal2(value) ^ value;
 }
+
+void print(char a, char b, char c) {
+    LOGE("%x:%x:%x", a, b, c);
+}
+
+//static uint8_t info_result[16] = {
+//        0x19, 0xa0, 0x9a, 0xe9,
+//        0x3d, 0xf4, 0xc6, 0xf8,
+//        0xe3, 0xe2, 0x8d, 0x48,
+//        0xbe, 0x2b, 0x2a, 0x08
+//};
+//static size_t info_pcks5_num = 1;
 
 void PCKS5Padding128Encrypt(const char *info, const char *key) {
     size_t info_length = strlen(info);//明文的长度
@@ -32,23 +43,55 @@ void PCKS5Padding128Encrypt(const char *info, const char *key) {
             info_result[i] = PAD[16 - info_length % 16];
         }
     }
+//    for (int i = 0; i < 32; ++i) {
+//        LOGE("%x", info_result[i]);
+//    }
     uint8_t key_result[176];
     getKey(key, key_result);
+//    for (int i = 0; i < 176; ++i) {
+//        LOGE("%x", key_result[i]);
+//    }
     for (int i = 0; i < info_pcks5_num; ++i) {//明文进行分段加密
-        aesEncrypt(info_result + i * 16, key_result + 16);
+        aesEncrypt(info_result + i * 16, key_result);
+    }
+    for (int i = 0; i < info_length_max; ++i) {
+        LOGE("mee:%x", info_result[i]);
     }
 };
 
 void aesEncrypt(uint8_t *info_start, uint8_t *key) {
-    for (int i = 0; i < 10; ++i) {
+    addRoundKey(info_start, key, 0);
+    for (int i = 1; i < 11; ++i) {
         subBytes(info_start);
+//        if (i == 1) {
+//            for (int m = 0; m < 16; ++m) {
+//                LOGE("subBytes:%x", info_start[m]);
+//            }
+//        }
         shiftRows(info_start);
-        if (i < 9) {
+//        if (i == 1) {
+//            for (int m = 0; m < 16; ++m) {
+//                LOGE("shiftRows:%x", info_start[m]);
+//            }
+//        }
+        if (i < 10) {
             mixColumns(info_start);
+//            if (i == 1) {
+//                for (int m = 0; m < 16; ++m) {
+//                    LOGE("mixColumns:%x", info_start[m]);
+//                }
+//            }
         }
-        addRoundKey(info_start, key + 16 * i);
+        addRoundKey(info_start, key + 16 * i, i);
+//        if (i == 1) {
+//            for (int m = 0; m < 16; ++m) {
+//                LOGE("addRoundKey:%x", info_start[m]);
+//            }
+//        }
+//        for (int m = 0; m < 16; ++m) {
+//            LOGE("addRoundKey:%x", info_start[m]);
+//        }
     }
-
 };
 
 void subBytes(uint8_t *info_start) {
@@ -97,16 +140,14 @@ void mixColumns(uint8_t *info_start) {
     }
 };//列混淆
 
-void addRoundKey(uint8_t *info_start, uint8_t *key) {
+void addRoundKey(uint8_t *info_start, uint8_t *key, int round) {
     for (int i = 0; i < 16; ++i) {
-        info_start[i] = info_start[i] ^ key[i];
+//        LOGE("me:%d:%x:%x", round, info_start[i], key[i]);
+        info_start[i] ^= key[i];
+//        LOGE("me:%x", info_start[i]);
     }
 };//与键值异或
 
-
-/**
- * 为了方便计算,密钥原16位也放入返回结果,位置为0-16
- */
 void getKey(const char *key, uint8_t *result) {
     for (int i = 0; i < 16; ++i) {//前16位放置原来的密钥
         result[i] = (uint8_t) key[i];
