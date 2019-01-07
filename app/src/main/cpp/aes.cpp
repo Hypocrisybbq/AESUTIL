@@ -16,18 +16,6 @@ uint8_t mixCal3(uint8_t value) {
     return mixCal2(value) ^ value;
 }
 
-void print(char a, char b, char c) {
-    LOGE("%x:%x:%x", a, b, c);
-}
-
-//static uint8_t info_result[16] = {
-//        0x19, 0xa0, 0x9a, 0xe9,
-//        0x3d, 0xf4, 0xc6, 0xf8,
-//        0xe3, 0xe2, 0x8d, 0x48,
-//        0xbe, 0x2b, 0x2a, 0x08
-//};
-//static size_t info_pcks5_num = 1;
-
 void PCKS5Padding128Encrypt(const char *info, const char *key) {
     size_t info_length = strlen(info);//明文的长度
 //    LOGE("info_length:%zu", info_length);
