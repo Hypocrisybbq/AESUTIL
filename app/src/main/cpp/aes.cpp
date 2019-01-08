@@ -17,6 +17,14 @@ uint8_t mixCal3(uint8_t value) {
     return mixCal2(value) ^ value;
 }
 
+uint8_t deMixCal2(uint8_t value) {
+    if (value & 0x80) {
+        return static_cast<uint8_t>(((value ^ 0x1b) >> 1) ^ (0x80));
+    } else {
+        return value >> 1;
+    }
+}
+
 void subBytes(uint8_t *info_start) {
     for (int i = 0; i < 16; ++i) {
         info_start[i] = sbox[info_start[i]];
@@ -63,11 +71,55 @@ void mixColumns(uint8_t *info_start) {
     }
 };//列混淆
 
-void addRoundKey(uint8_t *info_start, uint8_t *key, int round) {
+void deSubBytes(uint8_t *info_start) {
     for (int i = 0; i < 16; ++i) {
-//        LOGE("me:%d:%x:%x", round, info_start[i], key[i]);
+        info_start[i] = rsbox[info_start[i]];
+    }
+};
+
+void deShiftRows(uint8_t *info_start) {
+    uint8_t temp = info_start[13];
+    info_start[13] = info_start[9];
+    info_start[9] = info_start[5];
+    info_start[5] = info_start[1];
+    info_start[1] = temp;
+
+    temp = info_start[10];
+    info_start[10] = info_start[2];
+    info_start[2] = temp;
+
+    temp = info_start[14];
+    info_start[14] = info_start[6];
+    info_start[6] = temp;
+
+    temp = info_start[3];
+    info_start[3] = info_start[7];
+    info_start[7] = info_start[11];
+    info_start[11] = info_start[15];
+    info_start[15] = temp;
+
+};//行位移
+
+void deMixColumns(uint8_t *info_start) {
+    uint8_t temp[16];
+    for (int i = 0; i < 16; ++i) {
+        temp[i] = info_start[i];
+    }
+    for (int i = 0; i < 4; ++i) {
+        for (int j = 0; j < 4; ++j) {
+            int position = 4 * i + j;
+            info_start[position]
+                    = mixCal2(temp[position])
+                      ^ mixCal3(temp[4 * i + (j + 1) % 4])
+                      ^ temp[4 * i + (j + 2) % 4]
+                      ^ temp[4 * i + (j + 3) % 4];
+        }
+    }
+};//列混淆
+
+void addRoundKey(uint8_t *info_start, uint8_t *key) {
+    for (int i = 0; i < 16; ++i) {
         info_start[i] ^= key[i];
-//        LOGE("me:%x", info_start[i]);
     }
 };//与键值异或
 
@@ -89,43 +141,17 @@ void getKey(const char *key, uint8_t *result) {
             }
         }
     }
-//    for (int i = 0; i < 176; ++i) {
-//        LOGE("%x",result[i]);
-//    }
 };
 
 void aesEncrypt(uint8_t *info_start, uint8_t *key) {
-    addRoundKey(info_start, key, 0);
+    addRoundKey(info_start, key);
     for (int i = 1; i < 11; ++i) {
         subBytes(info_start);
-//        if (i == 1) {
-//            for (int m = 0; m < 16; ++m) {
-//                LOGE("subBytes:%x", info_start[m]);
-//            }
-//        }
         shiftRows(info_start);
-//        if (i == 1) {
-//            for (int m = 0; m < 16; ++m) {
-//                LOGE("shiftRows:%x", info_start[m]);
-//            }
-//        }
         if (i < 10) {
             mixColumns(info_start);
-//            if (i == 1) {
-//                for (int m = 0; m < 16; ++m) {
-//                    LOGE("mixColumns:%x", info_start[m]);
-//                }
-//            }
         }
-        addRoundKey(info_start, key + 16 * i, i);
-//        if (i == 1) {
-//            for (int m = 0; m < 16; ++m) {
-//                LOGE("addRoundKey:%x", info_start[m]);
-//            }
-//        }
-//        for (int m = 0; m < 16; ++m) {
-//            LOGE("addRoundKey:%x", info_start[m]);
-//        }
+        addRoundKey(info_start, key + 16 * i);
     }
 };
 
@@ -137,11 +163,8 @@ void cbcDeal(uint8_t *info, uint8_t *iv) {
 
 char *PCKS5Padding128Encrypt(const char *info, const char *key) {
     size_t info_length = strlen(info);//明文的长度
-//    LOGE("info_length:%zu", info_length);
     size_t info_pcks5_num = info_length / 16 + 1;//明文用PCKS5Padding填充后的段是
-//    LOGE("info_pcks5_num:%zu", info_pcks5_num);
     size_t info_length_max = (info_pcks5_num) * 16;//明文填充后的长度
-//    LOGE("info_length_max:%zu", info_length_max);
     uint8_t *info_result = (uint8_t *) malloc(info_length_max);
     for (int i = 0; i < info_length_max; ++i) {
         if (i < info_length) {
@@ -150,23 +173,39 @@ char *PCKS5Padding128Encrypt(const char *info, const char *key) {
             info_result[i] = PAD[16 - info_length % 16];
         }
     }
-//    for (int i = 0; i < 32; ++i) {
-//        LOGE("%x", info_result[i]);
-//    }
     uint8_t key_result[176];
     getKey(key, key_result);
-//    for (int i = 0; i < 176; ++i) {
-//        LOGE("%x", key_result[i]);
-//    }
     for (int i = 0; i < info_pcks5_num; ++i) {//明文进行分段加密
         aesEncrypt(info_result + i * 16, key_result);
     }
     char *base64En = b64_encode(info_result, info_length_max);
     free(info_result);
-//    for (int i = 0; i < info_length_max; ++i) {
-//        LOGE("mee:%x", info_result[i]);
-//    }
     return base64En;
+};
+
+void aesDecrypt(uint8_t *info, uint8_t *key) {//解码的时候要反过来
+    for (int i = 10; i > 0; --i) {
+        addRoundKey(info, key + 16 * i);
+        if (i < 10) {
+            deMixColumns(info);
+        }
+        deShiftRows(info);
+        deSubBytes(info);
+    }
+    addRoundKey(info, key);
+}
+
+char *PCKS5Padding128Decrypt(const char *info, const char *key) {
+    size_t base_info_length = strlen(info);//获取被Base64编码后密文的长度
+    size_t info_length = base_info_length / 4 * 3;//计算出被Base64编码前密文的长度(被Base64编码后密文长度会变成原来的4/3)
+    size_t encrypt_num = info_length / 16;//计算出密文的分段数
+    uint8_t *info_result = b64_decode(info, base_info_length);//前面有用Base64编码,所以要反Base64编码获得加密后的明文
+
+    uint8_t key_result[176];
+    getKey(key, key_result);//密钥扩展
+    for (int i = 0; i < encrypt_num; ++i) {
+        aesDecrypt(info_result + i * 16, key_result);
+    }
 };
 
 char *PCKS5Padding128CBCEncrypt(const char *info, const char *key, const char *iv) {

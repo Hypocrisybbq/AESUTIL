@@ -57,6 +57,18 @@ static const uint8_t rsbox[256] = {
         0x17, 0x2b, 0x04, 0x7e, 0xba, 0x77, 0xd6, 0x26, 0xe1, 0x69, 0x14, 0x63, 0x55, 0x21, 0x0c, 0x7d //F
 };
 
+static const uint8_t colM[4][4] = {//列混合要用到的矩阵
+        2, 3, 1, 1,
+        1, 2, 3, 1,
+        1, 1, 2, 3,
+        3, 1, 1, 2
+};
+static const uint8_t deColM[16] = {//逆列混淆矩阵
+        0xe, 0xb, 0xd, 0x9,
+        0x9, 0xe, 0xb, 0xd,
+        0xd, 0x9, 0xe, 0xb,
+        0xb, 0xd, 0x9, 0xe
+};
 static const uint8_t key_box[10] = {
         //0     1    2      3     4    5     6     7      8    9
         0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80, 0x1b, 0x36
@@ -72,6 +84,10 @@ static const uint8_t PAD[] = {0x10, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x
 
 char *PCKS5Padding128Encrypt(const char *info, const char *key);
 
+char *PCKS5Padding128Decrypt(const char *info, const char *key);
+
 char *PCKS5Padding128CBCEncrypt(const char *info, const char *key, const char *iv);
+
+char *PCKS5Padding128CBCDecrypt(const char *info, const char *key, const char *iv);
 
 #endif //AESUTIL_AES_H
