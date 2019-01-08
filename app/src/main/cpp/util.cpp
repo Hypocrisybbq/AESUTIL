@@ -15,7 +15,14 @@ JNIEXPORT jstring JNICALL Java_com_example_chen_aesutil_Util_encrypty
     char *string = PCKS5Padding128Encrypt(info_str, key_str);
     return env->NewStringUTF(string);
 } ;
-
+JNIEXPORT jstring JNICALL Java_com_example_chen_aesutil_Util_ecbDecrypty
+        (JNIEnv *env, jobject, jstring info, jstring key) {
+    const char *info_str = env->GetStringUTFChars(info, JNI_FALSE);
+    LOGE("%s", info_str);
+    const char *key_str = env->GetStringUTFChars(key, JNI_FALSE);
+    PCKS5Padding128Decrypt(info_str, key_str);
+    return env->NewStringUTF("abc");
+} ;
 JNIEXPORT jstring JNICALL Java_com_example_chen_aesutil_Util_cbcEncrypty
         (JNIEnv *env, jobject, jstring info, jstring key, jstring iv) {
     const char *info_str = env->GetStringUTFChars(info, JNI_FALSE);

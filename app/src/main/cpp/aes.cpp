@@ -17,13 +17,29 @@ uint8_t mixCal3(uint8_t value) {
     return mixCal2(value) ^ value;
 }
 
-uint8_t deMixCal2(uint8_t value) {
-    if (value & 0x80) {
-        return static_cast<uint8_t>(((value ^ 0x1b) >> 1) ^ (0x80));
-    } else {
-        return value >> 1;
-    }
+uint8_t mixCal9(uint8_t value) {
+    return mixCal3(mixCal3(value));
 }
+
+uint8_t mixCalB(uint8_t value) {
+    return mixCal9(value) ^ mixCal2(value);
+}
+
+uint8_t mixCalD(uint8_t value) {
+    return mixCalB(value) ^ mixCal2(value);
+}
+
+uint8_t mixCalE(uint8_t value) {
+    return mixCalD(value) ^ value;
+}
+
+//uint8_t deMixCal2(uint8_t value) {
+//    if (value & 0x80) {
+//        return static_cast<uint8_t>(((value ^ 0x1b) >> 1) ^ (0x80));
+//    } else {
+//        return value >> 1;
+//    }
+//}
 
 void subBytes(uint8_t *info_start) {
     for (int i = 0; i < 16; ++i) {
@@ -109,10 +125,10 @@ void deMixColumns(uint8_t *info_start) {
         for (int j = 0; j < 4; ++j) {
             int position = 4 * i + j;
             info_start[position]
-                    = mixCal2(temp[position])
-                      ^ mixCal3(temp[4 * i + (j + 1) % 4])
-                      ^ temp[4 * i + (j + 2) % 4]
-                      ^ temp[4 * i + (j + 3) % 4];
+                    = mixCalE(temp[position])
+                      ^ mixCalB(temp[4 * i + (j + 1) % 4])
+                      ^ mixCalD(temp[4 * i + (j + 2) % 4])
+                      ^ mixCal9(temp[4 * i + (j + 3) % 4]);
         }
     }
 };//列混淆
@@ -172,6 +188,7 @@ char *PCKS5Padding128Encrypt(const char *info, const char *key) {
         } else {
             info_result[i] = PAD[16 - info_length % 16];
         }
+//        LOGE("info_result:%x", info_result[i]);
     }
     uint8_t key_result[176];
     getKey(key, key_result);
@@ -195,7 +212,7 @@ void aesDecrypt(uint8_t *info, uint8_t *key) {//解码的时候要反过来
     addRoundKey(info, key);
 }
 
-char *PCKS5Padding128Decrypt(const char *info, const char *key) {
+void PCKS5Padding128Decrypt(const char *info, const char *key) {
     size_t base_info_length = strlen(info);//获取被Base64编码后密文的长度
     size_t info_length = base_info_length / 4 * 3;//计算出被Base64编码前密文的长度(被Base64编码后密文长度会变成原来的4/3)
     size_t encrypt_num = info_length / 16;//计算出密文的分段数

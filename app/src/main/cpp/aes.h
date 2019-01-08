@@ -64,10 +64,10 @@ static const uint8_t colM[4][4] = {//列混合要用到的矩阵
         3, 1, 1, 2
 };
 static const uint8_t deColM[16] = {//逆列混淆矩阵
-        0xe, 0xb, 0xd, 0x9,
-        0x9, 0xe, 0xb, 0xd,
-        0xd, 0x9, 0xe, 0xb,
-        0xb, 0xd, 0x9, 0xe
+        0x0e, 0x0b, 0x0d, 0x09,
+        0x09, 0x0e, 0x0b, 0x0d,
+        0x0d, 0x09, 0x0e, 0x0b,
+        0x0b, 0xd0, 0x09, 0x0e
 };
 static const uint8_t key_box[10] = {
         //0     1    2      3     4    5     6     7      8    9
@@ -84,7 +84,7 @@ static const uint8_t PAD[] = {0x10, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x
 
 char *PCKS5Padding128Encrypt(const char *info, const char *key);
 
-char *PCKS5Padding128Decrypt(const char *info, const char *key);
+void PCKS5Padding128Decrypt(const char *info, const char *key);
 
 char *PCKS5Padding128CBCEncrypt(const char *info, const char *key, const char *iv);
 

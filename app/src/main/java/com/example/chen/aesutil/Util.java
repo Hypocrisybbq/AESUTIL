@@ -7,5 +7,7 @@ public class Util {
 
     public native String encrypty(String info, String key);
 
+    public native String ecbDecrypty(String info, String key);
+
     public native String cbcEncrypty(String info, String key, String iv);
 }
