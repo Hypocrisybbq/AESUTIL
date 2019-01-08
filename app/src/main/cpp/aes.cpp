@@ -17,29 +17,33 @@ uint8_t mixCal3(uint8_t value) {
     return mixCal2(value) ^ value;
 }
 
-uint8_t mixCal9(uint8_t value) {
-    return mixCal3(mixCal3(value));
+uint8_t mixCal4(uint8_t value) {
+    return mixCal2(mixCal2(value));
 }
 
-uint8_t mixCalB(uint8_t value) {
+uint8_t mixCal8(uint8_t value) {
+    return mixCal2(mixCal4(value));
+}
+
+uint8_t mixCal9(uint8_t value) {
+    return mixCal8(value) ^ value;
+}
+
+uint8_t mixCal11(uint8_t value) {
     return mixCal9(value) ^ mixCal2(value);
 }
 
-uint8_t mixCalD(uint8_t value) {
-    return mixCalB(value) ^ mixCal2(value);
+uint8_t mixCal12(uint8_t value) {
+    return mixCal8(value) ^ mixCal4(value);
 }
 
-uint8_t mixCalE(uint8_t value) {
-    return mixCalD(value) ^ value;
+uint8_t mixCal13(uint8_t value) {
+    return mixCal12(value) ^ value;
 }
 
-//uint8_t deMixCal2(uint8_t value) {
-//    if (value & 0x80) {
-//        return static_cast<uint8_t>(((value ^ 0x1b) >> 1) ^ (0x80));
-//    } else {
-//        return value >> 1;
-//    }
-//}
+uint8_t mixCal14(uint8_t value) {
+    return mixCal12(value) ^ mixCal2(value);
+}
 
 void subBytes(uint8_t *info_start) {
     for (int i = 0; i < 16; ++i) {
@@ -125,9 +129,9 @@ void deMixColumns(uint8_t *info_start) {
         for (int j = 0; j < 4; ++j) {
             int position = 4 * i + j;
             info_start[position]
-                    = mixCalE(temp[position])
-                      ^ mixCalB(temp[4 * i + (j + 1) % 4])
-                      ^ mixCalD(temp[4 * i + (j + 2) % 4])
+                    = mixCal14(temp[position])
+                      ^ mixCal11(temp[4 * i + (j + 1) % 4])
+                      ^ mixCal13(temp[4 * i + (j + 2) % 4])
                       ^ mixCal9(temp[4 * i + (j + 3) % 4]);
         }
     }
@@ -188,7 +192,6 @@ char *PCKS5Padding128Encrypt(const char *info, const char *key) {
         } else {
             info_result[i] = PAD[16 - info_length % 16];
         }
-//        LOGE("info_result:%x", info_result[i]);
     }
     uint8_t key_result[176];
     getKey(key, key_result);
@@ -222,6 +225,9 @@ void PCKS5Padding128Decrypt(const char *info, const char *key) {
     getKey(key, key_result);//密钥扩展
     for (int i = 0; i < encrypt_num; ++i) {
         aesDecrypt(info_result + i * 16, key_result);
+    }
+    for (int i = 0; i < info_length; ++i) {
+        LOGE("%x", info_result[i]);
     }
 };
 
