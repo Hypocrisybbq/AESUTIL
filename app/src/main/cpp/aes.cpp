@@ -7,6 +7,7 @@
 #include <cstring>
 #include <malloc.h>
 #include "aes.h"
+#include "base64.h"
 
 uint8_t mixCal2(uint8_t value) {//有限域的计算,所以高于8位的位会溢出,溢出的数据不需要,如果类型是int 请添加0xff,不然结果会出异常
     return static_cast<uint8_t>((value << 1) ^ ((value & 0x80) ? 0x1b : 0x00));
@@ -15,72 +16,6 @@ uint8_t mixCal2(uint8_t value) {//有限域的计算,所以高于8位的位会�
 uint8_t mixCal3(uint8_t value) {
     return mixCal2(value) ^ value;
 }
-
-void PCKS5Padding128Encrypt(const char *info, const char *key) {
-    size_t info_length = strlen(info);//明文的长度
-//    LOGE("info_length:%zu", info_length);
-    size_t info_pcks5_num = info_length / 16 + 1;//明文用PCKS5Padding填充后的段是
-//    LOGE("info_pcks5_num:%zu", info_pcks5_num);
-    size_t info_length_max = (info_pcks5_num) * 16;//明文填充后的长度
-//    LOGE("info_length_max:%zu", info_length_max);
-    uint8_t *info_result = (uint8_t *) malloc(info_length_max);
-    for (int i = 0; i < info_length_max; ++i) {
-        if (i < info_length) {
-            info_result[i] = (uint8_t) info[i];
-        } else {
-            info_result[i] = PAD[16 - info_length % 16];
-        }
-    }
-//    for (int i = 0; i < 32; ++i) {
-//        LOGE("%x", info_result[i]);
-//    }
-    uint8_t key_result[176];
-    getKey(key, key_result);
-//    for (int i = 0; i < 176; ++i) {
-//        LOGE("%x", key_result[i]);
-//    }
-    for (int i = 0; i < info_pcks5_num; ++i) {//明文进行分段加密
-        aesEncrypt(info_result + i * 16, key_result);
-    }
-    for (int i = 0; i < info_length_max; ++i) {
-        LOGE("mee:%x", info_result[i]);
-    }
-};
-
-void aesEncrypt(uint8_t *info_start, uint8_t *key) {
-    addRoundKey(info_start, key, 0);
-    for (int i = 1; i < 11; ++i) {
-        subBytes(info_start);
-//        if (i == 1) {
-//            for (int m = 0; m < 16; ++m) {
-//                LOGE("subBytes:%x", info_start[m]);
-//            }
-//        }
-        shiftRows(info_start);
-//        if (i == 1) {
-//            for (int m = 0; m < 16; ++m) {
-//                LOGE("shiftRows:%x", info_start[m]);
-//            }
-//        }
-        if (i < 10) {
-            mixColumns(info_start);
-//            if (i == 1) {
-//                for (int m = 0; m < 16; ++m) {
-//                    LOGE("mixColumns:%x", info_start[m]);
-//                }
-//            }
-        }
-        addRoundKey(info_start, key + 16 * i, i);
-//        if (i == 1) {
-//            for (int m = 0; m < 16; ++m) {
-//                LOGE("addRoundKey:%x", info_start[m]);
-//            }
-//        }
-//        for (int m = 0; m < 16; ++m) {
-//            LOGE("addRoundKey:%x", info_start[m]);
-//        }
-    }
-};
 
 void subBytes(uint8_t *info_start) {
     for (int i = 0; i < 16; ++i) {
@@ -158,3 +93,111 @@ void getKey(const char *key, uint8_t *result) {
 //        LOGE("%x",result[i]);
 //    }
 };
+
+void aesEncrypt(uint8_t *info_start, uint8_t *key) {
+    addRoundKey(info_start, key, 0);
+    for (int i = 1; i < 11; ++i) {
+        subBytes(info_start);
+//        if (i == 1) {
+//            for (int m = 0; m < 16; ++m) {
+//                LOGE("subBytes:%x", info_start[m]);
+//            }
+//        }
+        shiftRows(info_start);
+//        if (i == 1) {
+//            for (int m = 0; m < 16; ++m) {
+//                LOGE("shiftRows:%x", info_start[m]);
+//            }
+//        }
+        if (i < 10) {
+            mixColumns(info_start);
+//            if (i == 1) {
+//                for (int m = 0; m < 16; ++m) {
+//                    LOGE("mixColumns:%x", info_start[m]);
+//                }
+//            }
+        }
+        addRoundKey(info_start, key + 16 * i, i);
+//        if (i == 1) {
+//            for (int m = 0; m < 16; ++m) {
+//                LOGE("addRoundKey:%x", info_start[m]);
+//            }
+//        }
+//        for (int m = 0; m < 16; ++m) {
+//            LOGE("addRoundKey:%x", info_start[m]);
+//        }
+    }
+};
+
+void cbcDeal(uint8_t *info, uint8_t *iv) {
+    for (int i = 0; i < 16; ++i) {
+        info[i] ^= iv[i];
+    }
+}
+
+char *PCKS5Padding128Encrypt(const char *info, const char *key) {
+    size_t info_length = strlen(info);//明文的长度
+//    LOGE("info_length:%zu", info_length);
+    size_t info_pcks5_num = info_length / 16 + 1;//明文用PCKS5Padding填充后的段是
+//    LOGE("info_pcks5_num:%zu", info_pcks5_num);
+    size_t info_length_max = (info_pcks5_num) * 16;//明文填充后的长度
+//    LOGE("info_length_max:%zu", info_length_max);
+    uint8_t *info_result = (uint8_t *) malloc(info_length_max);
+    for (int i = 0; i < info_length_max; ++i) {
+        if (i < info_length) {
+            info_result[i] = (uint8_t) info[i];
+        } else {
+            info_result[i] = PAD[16 - info_length % 16];
+        }
+    }
+//    for (int i = 0; i < 32; ++i) {
+//        LOGE("%x", info_result[i]);
+//    }
+    uint8_t key_result[176];
+    getKey(key, key_result);
+//    for (int i = 0; i < 176; ++i) {
+//        LOGE("%x", key_result[i]);
+//    }
+    for (int i = 0; i < info_pcks5_num; ++i) {//明文进行分段加密
+        aesEncrypt(info_result + i * 16, key_result);
+    }
+    char *base64En = b64_encode(info_result, info_length_max);
+    free(info_result);
+//    for (int i = 0; i < info_length_max; ++i) {
+//        LOGE("mee:%x", info_result[i]);
+//    }
+    return base64En;
+};
+
+char *PCKS5Padding128CBCEncrypt(const char *info, const char *key, const char *iv) {
+    size_t info_length = strlen(info);
+    size_t info_pcks5_num = info_length / 16 + 1;
+    size_t info_length_max = (info_pcks5_num) * 16;
+    uint8_t *info_result = (uint8_t *) malloc(info_length_max);
+    for (int i = 0; i < info_length_max; ++i) {
+        if (i < info_length) {
+            info_result[i] = (uint8_t) info[i];
+        } else {
+            info_result[i] = PAD[16 - info_length % 16];
+        }
+    }
+    uint8_t key_result[176];
+    getKey(key, key_result);
+
+    uint8_t iv_result[16];
+    for (int i = 0; i < 16; ++i) {
+        iv_result[i] = (uint8_t) iv[i];
+    }
+    for (int i = 0; i < info_pcks5_num; ++i) {//明文进行分段加密
+        if (i == 0) {
+            cbcDeal(info_result, iv_result);
+        } else {
+            cbcDeal(info_result + i * 16, info_result + (i - 1) * 16);
+        }
+        aesEncrypt(info_result + i * 16, key_result);
+    }
+    char *base64En = b64_encode(info_result, info_length_max);
+    return base64En;
+};
+
+

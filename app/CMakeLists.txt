@@ -10,8 +10,8 @@ add_library( # Specifies the name of the library.
         src/main/cpp/util.cpp
         src/main/cpp/aes.h
         src/main/cpp/aes.cpp
-        src/main/cpp/base.h
-        src/main/cpp/base.cpp
+        src/main/cpp/base64.c
+        src/main/cpp/base64.h
         )
 include_directories(src/main/cpp/include/)
 
