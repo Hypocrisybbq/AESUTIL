@@ -8,11 +8,11 @@ import android.util.Log;
 import com.example.chen.aesutil.jaes.AESUtil;
 
 import java.io.UnsupportedEncodingException;
+import java.security.Key;
 
 public class MainActivity extends AppCompatActivity {
 
-    private String info = "123abcABC*%!~#+_/中文测试";
-    //    private String info = "123456789abcdefghijklmnopqrstuvwxyz";
+    private String info = "陈祎喆";
     private String pass = "1234567890abcdef";
     private String iv = "abcdef1234567890";
 
@@ -26,9 +26,10 @@ public class MainActivity extends AppCompatActivity {
 //        String decrypty = util.ecbDecrypty(encrypt, pass);
 //        Log.e("CHEN", "decrypty: " + decrypty);
 
+//        String cbcEncrypty = util.cbcEncrypty(info, pass, iv);
         String cbcEncrypty = util.cbcEncrypty(info, pass, iv);
         Log.e("CHEN", "cbcEncrypty: " + cbcEncrypty);
-        String cbcDecrypty = util.cbcDecrypty(cbcEncrypty, pass, iv);
-        Log.e("CHEN", "cbcDecrypty: " + cbcDecrypty);
+//        String cbcDecrypty = util.cbcDecrypty(cbcEncrypty, pass, iv);
+//        Log.e("CHEN", "cbcDecrypty: " + cbcDecrypty);
     }
 }
