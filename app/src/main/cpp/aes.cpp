@@ -254,6 +254,9 @@ char *decryptDetail(const char *info, const char *key, const char *iv) {
     }
     size_t result_length = base_info_length / 4 * 3 - add_num;//编码前原文的长度
     int encrypt_num = static_cast<int>(result_length / 16);//计算出密文的分段数
+    if (encrypt_num <= 0) {
+        return NULL;
+    }
     uint8_t *info_result = b64_decode(info, base_info_length);//前面有用Base64编码,所以要反Base64编码获得加密后的明文
 
     uint8_t key_result[176];

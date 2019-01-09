@@ -4,10 +4,6 @@
 #include <cstring>
 #include <malloc.h>
 
-#define LOG_TAG "CHEN"
-#define LOGE(...) __android_log_print(ANDROID_LOG_ERROR, LOG_TAG, __VA_ARGS__)
-
-
 extern "C" {
 
 /**
@@ -50,7 +46,7 @@ jstring encrypt(JNIEnv *env, jstring info, jstring key, jstring iv, int hasIv, i
         }
     }
     if (string == NULL) {
-        return env->NewStringUTF("申请内存失败,请重试");
+        return env->NewStringUTF("解密的情况下可能密文不正确.其他可能是申请内存失败,请重试");
     } else {
         return env->NewStringUTF(string);
     }
