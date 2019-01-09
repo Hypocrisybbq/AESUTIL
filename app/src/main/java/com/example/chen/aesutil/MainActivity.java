@@ -21,11 +21,14 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         Util util = new Util();
-        String encrypt = util.encrypty(info, pass);
+//        String encrypt = util.encrypty(info, pass);
 //        Log.e("CHEN", "encrypt: " + encrypt);
-//        String cbcEncrypty = util.cbcEncrypty(info, pass, iv);
-//        Log.e("CHEN", "cbcEncrypty: " + cbcEncrypty);
-        String decrypty = util.ecbDecrypty(encrypt, pass);
-        Log.e("CHEN", "decrypty: " + decrypty);
+//        String decrypty = util.ecbDecrypty(encrypt, pass);
+//        Log.e("CHEN", "decrypty: " + decrypty);
+
+        String cbcEncrypty = util.cbcEncrypty(info, pass, iv);
+        Log.e("CHEN", "cbcEncrypty: " + cbcEncrypty);
+        String cbcDecrypty = util.cbcDecrypty(cbcEncrypty, pass, iv);
+        Log.e("CHEN", "cbcDecrypty: " + cbcDecrypty);
     }
 }

@@ -278,3 +278,44 @@ char *PCKS5Padding128CBCEncrypt(const char *info, const char *key, const char *i
 };
 
 
+char *PCKS5Padding128CBCDecrypt(const char *info, const char *key, const char *iv) {
+    size_t base_info_length = strlen(info);//获取被Base64编码后密文的长度
+    int add_num = 0;
+    for (size_t i = base_info_length - 4; i < base_info_length; ++i) {//计算最后四位包含 = 的数量
+        if (info[i] == '=') {
+            add_num += 1;
+        }
+    }
+    size_t result_length = base_info_length / 4 * 3 - add_num;//编码前原文的长度
+    int encrypt_num = static_cast<int>(result_length / 16);//计算出密文的分段数
+    uint8_t *info_result = b64_decode(info, base_info_length);//前面有用Base64编码,所以要反Base64编码获得加密后的明文
+
+    uint8_t key_result[176];
+    getKey(key, key_result);//密钥扩展
+
+    uint8_t iv_result[16];
+    for (int i = 0; i < 16; ++i) {
+        iv_result[i] = (uint8_t) iv[i];
+    }
+    for (int i = encrypt_num - 1; i >= 0; --i) {
+        aesDecrypt(info_result + i * 16, key_result);
+        if (i > 0) {
+            cbcDeal(info_result + i * 16, info_result + (i - 1) * 16);
+        } else {
+            cbcDeal(info_result + i * 16, iv_result);
+        }
+    }
+    char *result = NULL;
+    result = (char *) malloc(0);
+    if (result == NULL) {
+        return NULL;
+    }
+    result = (char *) realloc(result, result_length + 1);
+
+    for (int i = 0; i < result_length; ++i) {
+        result[i] = info_result[i];
+    }
+    result[result_length] = '\0';
+    return result;
+};
+
