@@ -9,6 +9,10 @@
 #include "aes.h"
 #include "base64.h"
 
+/*
+ * 下面对应列混淆的矩阵计算,后面的数字代表要与矩阵中哪个数据进行计算
+ * 可以参照aes.h中的列混淆和逆列混淆矩阵,方便理解
+ */
 uint8_t mixCal2(uint8_t value) {//有限域的计算,所以高于8位的位会溢出,溢出的数据不需要,如果类型是int 请添加0xff,不然结果会出异常
     return static_cast<uint8_t>((value << 1) ^ ((value & 0x80) ? 0x1b : 0x00));
 }
@@ -193,7 +197,12 @@ void aesDecrypt(uint8_t *info, uint8_t *key) {//解码的时候要反过来
     addRoundKey(info, key);
 }
 
-char *PCKS5Padding128Encrypt(const char *info, const char *key) {
+/**
+ * 去掉带向量部分的计算就是单纯的无向量加密函数了,
+ * 如果不需要向量解密,可以把那两块代码直接拿掉
+ * 拿掉以后调用外面的函数无论带不带向量都会变成ECB模式进行加密
+ */
+char *encryptDetail(const char *info, const char *key, const char *iv) {
     size_t info_length = strlen(info);//明文的长度
     size_t info_pcks5_num = info_length / 16 + 1;//明文用PCKS5Padding填充后的段是
     size_t info_length_max = (info_pcks5_num) * 16;//明文填充后的长度
@@ -207,78 +216,35 @@ char *PCKS5Padding128Encrypt(const char *info, const char *key) {
     }
     uint8_t key_result[176];
     getKey(key, key_result);
+
+    //---------------------------------------------------------Start 带向量计算部分
+    uint8_t iv_result[16];
+    if (iv != NULL) {
+        for (int m = 0; m < 16; ++m) {
+            iv_result[m] = (uint8_t) iv[m];
+        }
+    }
+    //---------------------------------------------------------end 带向量计算部分
+
+
     for (int i = 0; i < info_pcks5_num; ++i) {//明文进行分段加密
+        //---------------------------------------------------------Start 带向量计算部分
+        if (iv != NULL) {
+            if (i == 0) {
+                cbcDeal(info_result, iv_result);
+            } else {
+                cbcDeal(info_result + i * 16, info_result + (i - 1) * 16);
+            }
+        }
+        //---------------------------------------------------------end 带向量计算部分
         aesEncrypt(info_result + i * 16, key_result);
     }
     char *base64En = b64_encode(info_result, info_length_max);
     free(info_result);
     return base64En;
-};
+}
 
-char *PCKS5Padding128Decrypt(const char *info, const char *key) {
-    size_t base_info_length = strlen(info);//获取被Base64编码后密文的长度
-    int add_num = 0;
-    for (size_t i = base_info_length - 4; i < base_info_length; ++i) {//计算最后四位包含 = 的数量
-        if (info[i] == '=') {
-            add_num += 1;
-        }
-    }
-    size_t result_length = base_info_length / 4 * 3 - add_num;//编码前原文的长度
-    size_t encrypt_num = result_length / 16;//计算出密文的分段数
-    uint8_t *info_result = b64_decode(info, base_info_length);//前面有用Base64编码,所以要反Base64编码获得加密后的明文
-
-    uint8_t key_result[176];
-    getKey(key, key_result);//密钥扩展
-    for (int i = 0; i < encrypt_num; ++i) {
-        aesDecrypt(info_result + i * 16, key_result);
-    }
-    char *result = NULL;
-    result = (char *) malloc(0);
-    if (result == NULL) {
-        return NULL;
-    }
-    result = (char *) realloc(result, result_length + 1);
-
-    for (int i = 0; i < result_length; ++i) {
-        result[i] = info_result[i];
-    }
-    result[result_length] = '\0';
-    return result;
-};
-
-char *PCKS5Padding128CBCEncrypt(const char *info, const char *key, const char *iv) {
-    size_t info_length = strlen(info);
-    size_t info_pcks5_num = info_length / 16 + 1;
-    size_t info_length_max = (info_pcks5_num) * 16;
-    uint8_t *info_result = (uint8_t *) malloc(info_length_max);
-    for (int i = 0; i < info_length_max; ++i) {
-        if (i < info_length) {
-            info_result[i] = (uint8_t) info[i];
-        } else {
-            info_result[i] = PAD[16 - info_length % 16];
-        }
-    }
-    uint8_t key_result[176];
-    getKey(key, key_result);
-
-    uint8_t iv_result[16];
-    for (int i = 0; i < 16; ++i) {
-        iv_result[i] = (uint8_t) iv[i];
-    }
-    for (int i = 0; i < info_pcks5_num; ++i) {//明文进行分段加密
-        if (i == 0) {
-            cbcDeal(info_result, iv_result);
-        } else {
-            cbcDeal(info_result + i * 16, info_result + (i - 1) * 16);
-        }
-        aesEncrypt(info_result + i * 16, key_result);
-    }
-    char *base64En = b64_encode(info_result, info_length_max);
-    return base64En;
-};
-
-
-char *PCKS5Padding128CBCDecrypt(const char *info, const char *key, const char *iv) {
+char *decryptDetail(const char *info, const char *key, const char *iv) {
     size_t base_info_length = strlen(info);//获取被Base64编码后密文的长度
     int add_num = 0;
     for (size_t i = base_info_length - 4; i < base_info_length; ++i) {//计算最后四位包含 = 的数量
@@ -294,17 +260,26 @@ char *PCKS5Padding128CBCDecrypt(const char *info, const char *key, const char *i
     getKey(key, key_result);//密钥扩展
 
     uint8_t iv_result[16];
-    for (int i = 0; i < 16; ++i) {
-        iv_result[i] = (uint8_t) iv[i];
-    }
-    for (int i = encrypt_num - 1; i >= 0; --i) {
-        aesDecrypt(info_result + i * 16, key_result);
-        if (i > 0) {
-            cbcDeal(info_result + i * 16, info_result + (i - 1) * 16);
-        } else {
-            cbcDeal(info_result + i * 16, iv_result);
+    //---------------------------------------------------------Start 带向量计算部分
+    if (iv != NULL) {
+        for (int i = 0; i < 16; ++i) {
+            iv_result[i] = (uint8_t) iv[i];
         }
     }
+    //---------------------------------------------------------end 带向量计算部分
+    for (int i = encrypt_num - 1; i >= 0; --i) {
+        aesDecrypt(info_result + i * 16, key_result);
+        //---------------------------------------------------------Start 带向量计算部分
+        if (iv != NULL) {
+            if (i > 0) {
+                cbcDeal(info_result + i * 16, info_result + (i - 1) * 16);
+            } else {
+                cbcDeal(info_result + i * 16, iv_result);
+            }
+        }
+        //---------------------------------------------------------end 带向量计算部分
+    }
+
     char *result = NULL;
     result = (char *) malloc(0);
     if (result == NULL) {
@@ -317,5 +292,22 @@ char *PCKS5Padding128CBCDecrypt(const char *info, const char *key, const char *i
     }
     result[result_length] = '\0';
     return result;
+}
+
+
+char *PCKS5Padding128Encrypt(const char *info, const char *key) { //ECB模式加密
+    return encryptDetail(info, key, NULL);
+};
+
+char *PCKS5Padding128Decrypt(const char *info, const char *key) { //ECB模式解密
+    return decryptDetail(info, key, NULL);
+};
+
+char *PCKS5Padding128CBCEncrypt(const char *info, const char *key, const char *iv) { //CBC模式加密
+    return encryptDetail(info, key, iv);
+};
+
+char *PCKS5Padding128CBCDecrypt(const char *info, const char *key, const char *iv) { //CBC模式解密
+    return decryptDetail(info, key, iv);
 };
 

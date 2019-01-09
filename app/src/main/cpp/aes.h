@@ -58,10 +58,10 @@ static const uint8_t rsbox[256] = {
 };
 
 static const uint8_t colM[4][4] = {//列混合要用到的矩阵
-        2, 3, 1, 1,
-        1, 2, 3, 1,
-        1, 1, 2, 3,
-        3, 1, 1, 2
+        0x02, 0x03, 0x01, 0x01,
+        0x01, 0x02, 0x03, 0x01,
+        0x01, 0x01, 0x02, 0x03,
+        0x03, 0x01, 0x01, 0x02
 };
 static const uint8_t deColM[16] = {//逆列混淆矩阵
         0x0e, 0x0b, 0x0d, 0x09,
