@@ -26,6 +26,6 @@ public class MainActivity extends AppCompatActivity {
 //        String cbcEncrypty = util.cbcEncrypty(info, pass, iv);
 //        Log.e("CHEN", "cbcEncrypty: " + cbcEncrypty);
         String decrypty = util.ecbDecrypty(encrypt, pass);
-//        Log.e("CHEN", "decrypty: " + decrypty);
+        Log.e("CHEN", "decrypty: " + decrypty);
     }
 }

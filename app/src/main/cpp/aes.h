@@ -84,7 +84,7 @@ static const uint8_t PAD[] = {0x10, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x
 
 char *PCKS5Padding128Encrypt(const char *info, const char *key);
 
-void PCKS5Padding128Decrypt(const char *info, const char *key);
+char *PCKS5Padding128Decrypt(const char *info, const char *key);
 
 char *PCKS5Padding128CBCEncrypt(const char *info, const char *key, const char *iv);
 

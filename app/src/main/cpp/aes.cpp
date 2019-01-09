@@ -181,6 +181,18 @@ void cbcDeal(uint8_t *info, uint8_t *iv) {
     }
 }
 
+void aesDecrypt(uint8_t *info, uint8_t *key) {//解码的时候要反过来
+    for (int i = 10; i > 0; --i) {
+        addRoundKey(info, key + 16 * i);
+        if (i < 10) {
+            deMixColumns(info);
+        }
+        deShiftRows(info);
+        deSubBytes(info);
+    }
+    addRoundKey(info, key);
+}
+
 char *PCKS5Padding128Encrypt(const char *info, const char *key) {
     size_t info_length = strlen(info);//明文的长度
     size_t info_pcks5_num = info_length / 16 + 1;//明文用PCKS5Padding填充后的段是
@@ -203,22 +215,16 @@ char *PCKS5Padding128Encrypt(const char *info, const char *key) {
     return base64En;
 };
 
-void aesDecrypt(uint8_t *info, uint8_t *key) {//解码的时候要反过来
-    for (int i = 10; i > 0; --i) {
-        addRoundKey(info, key + 16 * i);
-        if (i < 10) {
-            deMixColumns(info);
-        }
-        deShiftRows(info);
-        deSubBytes(info);
-    }
-    addRoundKey(info, key);
-}
-
-void PCKS5Padding128Decrypt(const char *info, const char *key) {
+char *PCKS5Padding128Decrypt(const char *info, const char *key) {
     size_t base_info_length = strlen(info);//获取被Base64编码后密文的长度
-    size_t info_length = base_info_length / 4 * 3;//计算出被Base64编码前密文的长度(被Base64编码后密文长度会变成原来的4/3)
-    size_t encrypt_num = info_length / 16;//计算出密文的分段数
+    int add_num = 0;
+    for (size_t i = base_info_length - 4; i < base_info_length; ++i) {//计算最后四位包含 = 的数量
+        if (info[i] == '=') {
+            add_num += 1;
+        }
+    }
+    size_t result_length = base_info_length / 4 * 3 - add_num;//编码前原文的长度
+    size_t encrypt_num = result_length / 16;//计算出密文的分段数
     uint8_t *info_result = b64_decode(info, base_info_length);//前面有用Base64编码,所以要反Base64编码获得加密后的明文
 
     uint8_t key_result[176];
@@ -226,9 +232,18 @@ void PCKS5Padding128Decrypt(const char *info, const char *key) {
     for (int i = 0; i < encrypt_num; ++i) {
         aesDecrypt(info_result + i * 16, key_result);
     }
-    for (int i = 0; i < info_length; ++i) {
-        LOGE("%x", info_result[i]);
+    char *result = NULL;
+    result = (char *) malloc(0);
+    if (result == NULL) {
+        return NULL;
     }
+    result = (char *) realloc(result, result_length + 1);
+
+    for (int i = 0; i < result_length; ++i) {
+        result[i] = info_result[i];
+    }
+    result[result_length] = '\0';
+    return result;
 };
 
 char *PCKS5Padding128CBCEncrypt(const char *info, const char *key, const char *iv) {

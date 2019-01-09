@@ -19,8 +19,13 @@ JNIEXPORT jstring JNICALL Java_com_example_chen_aesutil_Util_ecbDecrypty
         (JNIEnv *env, jobject, jstring info, jstring key) {
     const char *info_str = env->GetStringUTFChars(info, JNI_FALSE);
     const char *key_str = env->GetStringUTFChars(key, JNI_FALSE);
-    PCKS5Padding128Decrypt(info_str, key_str);
-    return env->NewStringUTF("abc");
+    char *string = PCKS5Padding128Decrypt(info_str, key_str);
+    if (string != NULL) {
+        return env->NewStringUTF(string);
+    } else {
+        return env->NewStringUTF("申请内存失败,请重试");
+    }
+
 } ;
 JNIEXPORT jstring JNICALL Java_com_example_chen_aesutil_Util_cbcEncrypty
         (JNIEnv *env, jobject, jstring info, jstring key, jstring iv) {
