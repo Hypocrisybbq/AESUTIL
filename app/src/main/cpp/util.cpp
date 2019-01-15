@@ -56,20 +56,24 @@ jstring encrypt(JNIEnv *env, jstring info, jstring key, jstring iv, int hasIv, i
  * key 密钥
  * iv 向量
  */
-JNIEXPORT jstring JNICALL Java_com_example_chen_aesutil_Util_encrypty //ECB加密
-        (JNIEnv *env, jobject, jstring info, jstring key) {
+
+JNIEXPORT jstring JNICALL Java_com_example_chen_aesutil_Util_encrypty
+        (JNIEnv *env, jclass, jstring info, jstring key) {
     return encrypt(env, info, key, NULL, 0, 1);
 } ;
-JNIEXPORT jstring JNICALL Java_com_example_chen_aesutil_Util_ecbDecrypty //ECB解密
-        (JNIEnv *env, jobject, jstring info, jstring key) {
+JNIEXPORT jstring JNICALL Java_com_example_chen_aesutil_Util_ecbDecrypty
+        (JNIEnv *env, jclass, jstring info, jstring key) {
     return encrypt(env, info, key, NULL, 0, 0);
 } ;
-JNIEXPORT jstring JNICALL Java_com_example_chen_aesutil_Util_cbcEncrypty //CBC加密
-        (JNIEnv *env, jobject, jstring info, jstring key, jstring iv) {
+
+JNIEXPORT jstring JNICALL Java_com_example_chen_aesutil_Util_cbcEncrypty
+        (JNIEnv *env, jclass, jstring info, jstring key, jstring iv) {
     return encrypt(env, info, key, iv, 1, 1);
 } ;
-JNIEXPORT jstring JNICALL Java_com_example_chen_aesutil_Util_cbcDecrypty //CBC解密
-        (JNIEnv *env, jobject, jstring info, jstring key, jstring iv) {
+
+JNIEXPORT jstring JNICALL Java_com_example_chen_aesutil_Util_cbcDecrypty
+        (JNIEnv *env, jclass, jstring info, jstring key, jstring iv) {
     return encrypt(env, info, key, iv, 1, 0);
 } ;
+
 }
