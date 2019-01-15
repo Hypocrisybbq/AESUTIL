@@ -15,7 +15,6 @@ public class MainActivity extends AppCompatActivity {
     private String info = "测试内容自己改啦";
     private String pass = "1234567890abcdef";
     private String iv = "abcdef1234567890";
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
